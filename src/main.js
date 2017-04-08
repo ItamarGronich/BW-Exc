@@ -6,94 +6,62 @@
  */
 const DevTools = function () {
 
-  // Incremental id store.
-  let idBank = 0;
 
-  /**
-   * DevTools Html element wrapper.
-   */
-  class Element {
-
-    constructor(elem) {
-      this.DomNode = elem;
-      this.id = idBank++
-    }
-
-
-  }
-
-  /** The DOM model type. Holds the structure of the Dom and will be used to
-   *  generate the DevTools dom representation.
-   *
-   *  @method addElement
-   *  @method remove
-   */
-  class DomModel {
-
-
-    constructor() {
-      // Holds the acutal dom nodes in tree structure.
-      this.tree = new Map();
-
-
-    }
+  const
 
     /**
-     * Set a new element with a new id to the model.
-     *
-     * @param {Element} el the dom node wrapped in a Element type.
+     * Actions
+     * @type {{}}
      */
-    addElement(el) {
-      this.tree.set(el.id,  el);
-    }
+    Hover  = {},
+    Move   = {},
 
-    removeElement() {
+    /**
+     * Model of the current DOM
+     *
+     * @type {HTMLElement} Model - Node tree of the body and it's children.
+     */
+    Model  = document.body,
 
-    }
+    /**
+     * Renders the html component that represents the view.
+     * @param model
+     */
+    view   = (model) => {
 
-    getModel() {
-      return this.tree.entries();
-    }
-  }
+    },
 
+    /**
+     * update the view and the model.
+     *
+     * @param {Object}      action - One of the actions defined above.
+     * @param {HTMLElement} model  - The DOM
+     */
+    update = (action, model) => {
 
-  const model = new DomModel();
+      switch (action) {
+        case Hover :
+          break;
 
-  function update(action, model) {
+        case Move :
+          break;
 
-  }
-
-
-  function view(model) {
-
-  }
-
-
-  function init() {
-
-    function buildModel(el) {
-      if (el.nodeType === Node.ELEMENT_NODE) {
-        // Add the element to the model and wrap it with the Element type.
-        model.addElement(new Element(el));
+        default:
+          break;
       }
 
-      if (el.hasChildNodes()) {
+      // Trigger the view function with the updated model.
+      view(model);
 
-        for (let i = 0; i < el.childNodes.length; i++) {
-          const node = new Element(el.childNodes[i]);
-          
-        }
-      }
-    }
-
-    let tree = document.body;
-
-    buildModel(tree);
-  }
+    };
 
   return {
-    DomModel: DomModelFactory(),
-    init: init
+
+    // Render an initial state.
+    init() {
+
+      update(null, Model);
+    }
 
   }
 };
