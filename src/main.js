@@ -6,17 +6,22 @@
  */
 const DevTools = function () {
 
+  class Utils {
+
+    // Generates a numerical hash from a string.
+    static hashCode(string) {
+      let hash = 0, i, chr;
+      if (string.length === 0) return hash;
+      for (i = 0; i < string.length; i++) {
+        chr   = string.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return hash;
+    };
+  }
 
   const
-
-    /**
-     * Actions.
-     *
-     * these are object just so they can be compared in equality operator.
-     * @type {{}}
-     */
-    Hover  = {},
-    Move   = {},
 
     /**
      * Model of the current DOM
@@ -48,10 +53,21 @@ const DevTools = function () {
 
           // Twin node in devtools.
           this.twin = document.createElement('div');
-          this.twin.addEventListener('mouseover', e => this.hover());
-          this.twin.textContent = el.tagName;
-          this.twin.setAttribute('style', 'min-width: 100px; min-height: 100px;');
 
+          ['mouseover', 'mouseout'].forEach(eventName =>
+            this.twin.addEventListener(eventName, e => this.hover(eventName))
+          );
+
+          this.twin.textContent = el.tagName.toLowerCase();
+          this.twin.setAttribute('style',
+            `min-width: 20px;
+             min-height: 20px;
+             border: 1px solid black;
+             display: inline-block;
+             padding: 1em;
+             margin: 2em 1em 0 0;
+             vertical-align: top;
+             background: hsl(${Utils.hashCode(this.twin.textContent)},60%, 60%)`);
           if (!parent) {
             parent = devToolsFrame;
           }
@@ -60,8 +76,16 @@ const DevTools = function () {
 
         }
 
-        hover() {
-          this.node.style.background = 'rgba(35,240,60,.5)';
+        hover(e) {
+
+          switch (e) {
+            case 'mouseover':
+              this.node.style.background = 'rgba(35,240,60,.25)';
+              break;
+            case 'mouseout':
+              this.node.style.background = '';
+              break;
+          }
         }
 
         appendEl(parent) {
@@ -75,60 +99,37 @@ const DevTools = function () {
 
       const buildTree = (model, parent) => {
 
-        if (model.nodeType === Node.ELEMENT_NODE) {
-          new Element(model, parent);
+        if ( model === devToolsFrame
+          || model.nodeType !== Node.ELEMENT_NODE
+          || model.tagName.toLowerCase() === 'script') {
+          return;
         }
 
+        let el;
+
+        el = new Element(model, parent);
+
+
         if (model.hasChildNodes()) {
-          Array.from(model.childNodes).forEach( node => buildTree(node));
+          Array.from(model.childNodes).forEach( node => buildTree(node, el));
         }
 
       };
 
-      const tree = buildTree(model, null);
+      buildTree(model, null);
 
-    }/*,
-
-    /!**
-     * update the view and the model.
-     *
-     * @param {Object}      action - One of the actions defined above.
-     * @param {HTMLElement} model  - The DOM
-     *!/
-    update = (action, model) => {
-
-      switch (action) {
-
-        case Hover :
-          console.log('Hover!!');
-
-          break;
-
-        case Move :
-          console.log('Move!!');
-          break;
-
-        default:
-          console.log(`initial state: ${model}`);
-          break;
-      }
-
-      // Trigger the view function with the updated model.
-      view(model);
-
-    }*/;
+    };
 
   return {
-
-    attatchListeners() {
-
-      return this;
-    },
 
     // Render an initial state.
     init() {
 
-      devToolsFrame.setAttribute('style', 'height: 400px; background: grey; border-top: 1px solid darkgrey; overflow: auto;');
+      devToolsFrame.setAttribute('style',
+        `height: 400px;
+         background: grey;
+         border-top: 1px solid darkgrey;
+         overflow: auto;`);
 
       document.body.appendChild(devToolsFrame);
       // fire the update with no action.
@@ -145,7 +146,6 @@ const DevTools = function () {
 document.addEventListener('DOMContentLoaded', () => {
 
   DevTools()
-    .attatchListeners()
     .init();
 
 });
