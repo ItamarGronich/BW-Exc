@@ -13,8 +13,8 @@ const DevTools = function () {
       let hash = 0, i, chr;
       if (string.length === 0) return hash;
       for (i = 0; i < string.length; i++) {
-        chr   = string.charCodeAt(i);
-        hash  = ((hash << 5) - hash) + chr;
+        chr  = string.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
         hash |= 0; // Convert to 32bit integer
       }
       return hash;
@@ -28,16 +28,23 @@ const DevTools = function () {
      *
      * @type {HTMLElement} Model - Node tree of the body and it's children.
      */
-    Model  = document.body,
+    Model         = document.body,
 
     devToolsFrame = document.createElement('div'),
+
+    mouseover     = 'mouseover',
+    mouseout      = 'mouseout',
+    dragstart     = 'dragstart',
+    drop          = 'drop',
+    dragenter     = 'dragenter',
+    dragleave     = 'dragleave',
 
     /**
      * Renders the html component that represents the view.
      *
      * @param model
      */
-    view   = (model) => {
+    view          = (model) => {
       class Element {
 
         /**
@@ -54,8 +61,14 @@ const DevTools = function () {
           // Twin node in devtools.
           this.twin = document.createElement('div');
 
-          ['mouseover', 'mouseout'].forEach(eventName =>
+          // Attach hover events to the twin element.
+          [mouseover, mouseout].forEach(eventName =>
             this.twin.addEventListener(eventName, e => this.hover(event))
+          );
+
+          // Attach darg and drop events to the twin element.
+          [dragstart, drop, dragenter, dragleave].forEach(eventName =>
+            this.twin.addEventListener(eventName, e => this.drag(event), false)
           );
 
           this.twin.textContent = el.tagName.toLowerCase();
@@ -69,7 +82,10 @@ const DevTools = function () {
              margin: 2em 1em 0 0;
              vertical-align: top;
              transition: all 150ms ease-in-out;
+             transition-delay: 100ms;
              background: ${this.generateColor()}`);
+
+          this.twin.setAttribute('draggable', 'true');
           if (!parent) {
             parent = devToolsFrame;
           }
@@ -81,14 +97,14 @@ const DevTools = function () {
         hover(event) {
 
           switch (event.type) {
-            case 'mouseover':
+            case mouseover:
               this.node.style.background = 'rgba(35,240,60,.25)';
               if (event.target === this.twin) {
-                event.target.style.background =  this.generateColor('60%', '70%');
+                event.target.style.background = this.generateColor('60%', '70%');
               }
 
               break;
-            case 'mouseout':
+            case mouseout:
               this.node.style.background = '';
               if (event.target === this.twin) {
                 event.target.style.background = this.generateColor();
@@ -97,8 +113,27 @@ const DevTools = function () {
           }
         }
 
+        drag(event) {
+
+          switch (event.type) {
+            case dragstart:
+              console.log(dragstart);
+              
+              break;
+            case dragenter:
+              console.log(dragenter);
+
+              break;
+              case dragleave:
+                console.log(dragleave);
+
+              break;
+          }
+
+        }
+
         appendEl(parent) {
-          if (parent instanceof  Element) {
+          if (parent instanceof Element) {
             parent.twin.appendChild(this.twin)
           } else {
             parent.appendChild(this.twin);
@@ -113,7 +148,7 @@ const DevTools = function () {
 
       const buildTree = (model, parent) => {
 
-        if ( model === devToolsFrame
+        if (model === devToolsFrame
           || model.nodeType !== Node.ELEMENT_NODE
           || model.tagName.toLowerCase() === 'script') {
           return;
@@ -125,7 +160,7 @@ const DevTools = function () {
 
 
         if (model.hasChildNodes()) {
-          Array.from(model.childNodes).forEach( node => buildTree(node, el));
+          Array.from(model.childNodes).forEach(node => buildTree(node, el));
         }
 
       };
