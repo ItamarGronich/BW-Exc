@@ -55,7 +55,7 @@ const DevTools = function () {
           this.twin = document.createElement('div');
 
           ['mouseover', 'mouseout'].forEach(eventName =>
-            this.twin.addEventListener(eventName, e => this.hover(eventName))
+            this.twin.addEventListener(eventName, e => this.hover(event))
           );
 
           this.twin.textContent = el.tagName.toLowerCase();
@@ -64,10 +64,12 @@ const DevTools = function () {
              min-height: 20px;
              border: 1px solid black;
              display: inline-block;
+             cursor: pointer;
              padding: 1em;
              margin: 2em 1em 0 0;
              vertical-align: top;
-             background: hsl(${Utils.hashCode(this.twin.textContent)},60%, 60%)`);
+             transition: all 150ms ease-in-out;
+             background: ${this.generateColor()}`);
           if (!parent) {
             parent = devToolsFrame;
           }
@@ -76,14 +78,21 @@ const DevTools = function () {
 
         }
 
-        hover(e) {
+        hover(event) {
 
-          switch (e) {
+          switch (event.type) {
             case 'mouseover':
               this.node.style.background = 'rgba(35,240,60,.25)';
+              if (event.target === this.twin) {
+                event.target.style.background =  this.generateColor('60%', '70%');
+              }
+
               break;
             case 'mouseout':
               this.node.style.background = '';
+              if (event.target === this.twin) {
+                event.target.style.background = this.generateColor();
+              }
               break;
           }
         }
@@ -94,6 +103,11 @@ const DevTools = function () {
           } else {
             parent.appendChild(this.twin);
           }
+        }
+
+        generateColor(saturation = '60%', luminosity = '60%') {
+          let hue = Utils.hashCode(this.node.tagName.toLowerCase());
+          return `hsl(${hue}, ${saturation}, ${luminosity})`;
         }
       }
 
