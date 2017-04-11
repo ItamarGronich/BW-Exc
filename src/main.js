@@ -6,7 +6,7 @@
  */
 const DevTools = function () {
 
-  // Will hold reference to the element being dragged.
+  // {Element} Will hold reference to the element being dragged.
   let dragged;
 
   const
@@ -18,8 +18,10 @@ const DevTools = function () {
      */
     Model         = document.body,
 
+    // The devtools frame all content will be appended to.
     devToolsFrame = document.createElement('div'),
 
+    // Used events.
     mouseover     = 'mouseover',
     mouseout      = 'mouseout',
     dragstart     = 'dragstart',
@@ -30,23 +32,32 @@ const DevTools = function () {
     /**
      * Renders the html component that represents the view.
      *
-     * @param model
+     * @param {HTMLElement} model - the root node of the recognized DOM tree.
      */
     view          = (model) => {
 
-      const buildTree = (model, parent) => {
+      /**
+       * Walks the dom and wraps each node with the Element class.
+       *
+       * Effectively linking the node and it's representation in the DevTools.
+       * @param {HTMLElement} element - the current element being wrapped.
+       * @param {Element} parent  - the parent Element of that element.
+       */
+      const buildTree = (element, parent) => {
 
-        if ( model === devToolsFrame
-          || model.nodeType !== Node.ELEMENT_NODE
-          || model.tagName.toLowerCase() === 'script' ) {
+        // Skip to DevTools frame, script tags and non elements.
+        if ( element === devToolsFrame
+          || element.nodeType !== Node.ELEMENT_NODE
+          || element.tagName.toLowerCase() === 'script' ) {
           return;
         }
 
-        let el = new Element(model, parent);
+        // Wrap element with Element class.
+        let el = new Element(element, parent);
 
 
-        if ( model.hasChildNodes() ) {
-          Array.from(model.childNodes).forEach(node => buildTree(node, el));
+        if ( element.hasChildNodes() ) {
+          Array.from(element.childNodes).forEach(node => buildTree(node, el));
         }
 
       };
@@ -55,12 +66,16 @@ const DevTools = function () {
 
     };
 
+  /**
+   * Wraps the html nodes and bind them to their "twin" in the DevTools frame.
+   */
   class Element {
 
     /**
-     * Construct the element object.
+     * Construct the binding class, attach listeners and add styles.
      *
-     * @param {HTMLElement} el
+     * @param {HTMLElement}  el     - The actual dom node.
+     * @param {Element|null} parent - The parent Element class if exists.
      */
     constructor(el, parent) {
 
@@ -81,31 +96,57 @@ const DevTools = function () {
       );
 
       this.twin.textContent = el.tagName.toLowerCase();
+
+      // Set styles.
       this.twin.setAttribute('style',
         `min-width: 20px;
-             min-height: 20px;
-             border: 1px solid black;
-             display: inline-block;
-             cursor: pointer;
-             padding: 1em;
-             margin: 2em 1em 0 0;
-             vertical-align: top;
-             transition: all 150ms ease-in-out;
-             transition-delay: 100ms;
-             background: ${this.generateColor()}`);
+         min-height: 20px;
+         border: 1px solid black;
+         display: inline-block;
+         cursor: pointer;
+         padding: 1em;
+         margin: 2em 1em 0 0;
+         vertical-align: top;
+         transition: all 150ms ease-in-out;
+         transition-delay: 100ms;
+         background: ${this.generateColor()}`);
 
+      // Set draggable.
       this.twin.setAttribute('draggable', 'true');
+
+      // Parent is the DevTools frame if no parent supplied.
       if ( !parent ) {
         parent = devToolsFrame;
       }
 
+      // Insert the created twin node to the DevTools frame.
       this.appendEl(parent);
 
     }
 
+    /**
+     * Append the created twin to the specified parent element.
+     *
+     * @param {Element|HTMLElement} parent - The parent element|class.
+     */
+    appendEl(parent) {
+      if ( parent instanceof Element ) {
+        parent.twin.appendChild(this.twin)
+      } else {
+        parent.appendChild(this.twin);
+      }
+    }
+
+    /**
+     * Hover event handler.
+     *
+     * @param {MouseEvent} event - Hover event object.
+     */
     hover(event) {
 
       switch ( event.type ) {
+
+        // onmouseover.
         case mouseover:
           this.node.style.background = 'rgba(35,240,60,.25)';
           if ( event.target === this.twin ) {
@@ -113,6 +154,8 @@ const DevTools = function () {
           }
 
           break;
+
+        // onmouseout.
         case mouseout:
           this.node.style.background = '';
           if ( event.target === this.twin ) {
@@ -122,10 +165,17 @@ const DevTools = function () {
       }
     }
 
+    /**
+     * Drag & drop event handler.
+     *
+     * @param {DragEvent} event - The DragEvent object.
+     */
     drag(event) {
       event.stopPropagation();
 
       switch ( event.type ) {
+
+        // ondragstart.
         case dragstart:
 
           // Store the element being dragged.
@@ -133,6 +183,8 @@ const DevTools = function () {
           event.dataTransfer.dropEffect = 'move';
 
           break;
+
+        // ondragover. Fires when dragging over an element.
         case dragover:
 
           if ( event.target === dragged.twin || event.path.includes(dragged.twin) ) return;
@@ -156,11 +208,14 @@ const DevTools = function () {
 
 
           break;
+
+        // ondragleave. Fires when dragging out of an element.
         case dragleave:
           event.target.style.border = '1px solid black';
 
           break;
 
+        // ondrop. Handle the dropping of an element.
         case drop:
 
           event.target.style.border = '1px solid black';
@@ -189,14 +244,14 @@ const DevTools = function () {
 
     }
 
-    appendEl(parent) {
-      if ( parent instanceof Element ) {
-        parent.twin.appendChild(this.twin)
-      } else {
-        parent.appendChild(this.twin);
-      }
-    }
-
+    /**
+     * Get the current section the element is being dragged over.
+     *
+     * Can be right, left and defaults to center.
+     * @param {Number} x - the point on the x access the event occurred.
+     *
+     * @returns {String|Undefined} - The section. 'left', 'right' or undefied.
+     */
     getSection(x) {
 
       const {left, right} = this.twin.getBoundingClientRect();
@@ -212,15 +267,33 @@ const DevTools = function () {
       }
     };
 
+    /**
+     * Generate a color for the twin element in the devtools based on hash of
+     * its tag name.
+     *
+     * @param {String} [saturation] - must be in a human readable percent value.
+     * @param {String} [luminosity] - must be in a human readable percent value.
+     *
+     * @returns {string} a css acceptable hsl color format.
+     */
     generateColor(saturation = '60%', luminosity = '60%') {
       let hue = Utils.hashCode(this.node.tagName.toLowerCase());
       return `hsl(${hue}, ${saturation}, ${luminosity})`;
     }
   }
 
+  /**
+   * Static helper functions.
+   */
   class Utils {
 
-    // Generates a numerical hash from a string.
+    /**
+     * Generates a numerical hash from a string.
+     *
+     * @param {String} string - a string to turn into a hash.
+     *
+     * @returns {number} The hash value of the supplied string.
+     */
     static hashCode(string) {
       let hash = 0, i, chr;
       if ( string.length === 0 ) return hash;
@@ -235,7 +308,7 @@ const DevTools = function () {
 
   return {
 
-    // Render an initial state.
+    // Render an initial state for the frame.
     init() {
 
       devToolsFrame.setAttribute('style',
@@ -244,7 +317,9 @@ const DevTools = function () {
          border-top: 1px solid darkgrey;
          overflow: auto;`);
 
+      // Append the frame.
       document.body.appendChild(devToolsFrame);
+
       // fire the update with no action.
       view(Model);
 
@@ -262,8 +337,3 @@ document.addEventListener('DOMContentLoaded', () => {
     .init();
 
 });
-
-// Fire when window loads. Page fully loaded.
-window.onload = () => {
-
-};
