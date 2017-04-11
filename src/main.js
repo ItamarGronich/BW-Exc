@@ -67,7 +67,7 @@ const DevTools = function () {
     };
 
   /**
-   * Wraps the html nodes and bind them to their "twin" in the DevTools frame.
+   * Wrap the html nodes and bind them to their "twin" in the DevTools frame.
    */
   class Element {
 
@@ -82,7 +82,7 @@ const DevTools = function () {
       // Original node.
       this.node = el;
 
-      // Twin node in devtools.
+      // Twin node in DevTools.
       this.twin = document.createElement('div');
 
       // Attach hover events to the twin element.
@@ -90,7 +90,7 @@ const DevTools = function () {
         this.twin.addEventListener(eventName, e => this.hover(event))
       );
 
-      // Attach darg and drop events to the twin element.
+      // Attach drag and drop events to the twin element.
       [dragstart, drop, dragover, dragleave].forEach(eventName =>
         this.twin.addEventListener(eventName, e => this.drag(event), false)
       );
@@ -149,15 +149,18 @@ const DevTools = function () {
         // onmouseover.
         case mouseover:
           this.node.style.background = 'rgba(35,240,60,.25)';
+
+          // highlight only the target (Needed cause of bubbling).
           if ( event.target === this.twin ) {
             event.target.style.background = this.generateColor('60%', '70%');
           }
-
           break;
 
         // onmouseout.
         case mouseout:
           this.node.style.background = '';
+
+          // Set styles back on mouse out.
           if ( event.target === this.twin ) {
             event.target.style.background = this.generateColor();
           }
@@ -168,7 +171,7 @@ const DevTools = function () {
     /**
      * Drag & drop event handler.
      *
-     * @param {DragEvent} event - The DragEvent object.
+     * @param {Event} event - The DragEvent object.
      */
     drag(event) {
       event.stopPropagation();
@@ -181,16 +184,18 @@ const DevTools = function () {
           // Store the element being dragged.
           dragged = this;
           event.dataTransfer.dropEffect = 'move';
-
           break;
 
         // ondragover. Fires when dragging over an element.
         case dragover:
 
+          // Exit if dragging over oneself or any of it's children.
           if ( event.target === dragged.twin || event.path.includes(dragged.twin) ) return;
 
+          // Enable drop target.
           event.preventDefault();
 
+          // Respond to different sections in target element.
           switch ( this.getSection(event.x) ) {
             case 'left':
               event.target.style.border     = '1px solid black';
@@ -218,12 +223,16 @@ const DevTools = function () {
         // ondrop. Handle the dropping of an element.
         case drop:
 
+          // Set styles back.
           event.target.style.border = '1px solid black';
 
+          // Exit if dragging over oneself or any of it's children.
           if ( event.target === dragged.twin || event.path.includes(dragged.twin) ) return;
 
+          // Enable drop target.
           event.preventDefault();
 
+          // Respond to different sections in target element.
           switch ( this.getSection(event.x) ) {
             case 'left':
               event.target.parentElement.insertBefore(dragged.twin, event.target);
@@ -259,7 +268,8 @@ const DevTools = function () {
       // 10% of the width of the element. limited to min 5 and max 50;
       const edgeArea = Math.min(Math.max(event.target.clientWidth * 0.1, 15), 50);
 
-      // Left or right if currently in 10% range of the element width.
+      // Left or right if currently in 10% range of the element width from each
+      // border.
       if ( x > left && x < (left + edgeArea) ) {
         return 'left';
       } else if ( x < right && x > (right - edgeArea) ) {
@@ -333,6 +343,7 @@ const DevTools = function () {
 // HTML fully parsed. Dom now safely editable.
 document.addEventListener('DOMContentLoaded', () => {
 
+  // Dom loaded fire-up DevTools.
   DevTools()
     .init();
 
